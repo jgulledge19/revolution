@@ -248,16 +248,20 @@ Ext.extend(MODx.tree.Element,MODx.tree.Tree,{
             }
             ,listeners: {
                 'success': {fn:function(r) {
+                    var nameField = (type == 'template') ? 'templatename' : 'name';
                     var w = MODx.load({
                         xtype: 'modx-window-quick-update-'+type
                         ,record: r.object
                         ,listeners: {
                             'success':{fn:function(r) {
                                 this.refreshNode(this.cm.activeNode.id);
+                                var newTitle = '<span dir="ltr">' + r.f.findField(nameField).getValue() + ' (' + w.record.id + ')</span>';
+                                w.setTitle(w.title.replace(/<span.*\/span>/, newTitle));
                             },scope:this}
                             ,'hide':{fn:function() {this.destroy();}}
                         }
                     });
+                    w.title += ': <span dir="ltr">' + w.record[nameField] + ' ('+ w.record.id + ')</span>';
                     w.setValues(r.object);
                     w.show(e.target);
                 },scope:this}
@@ -307,8 +311,8 @@ Ext.extend(MODx.tree.Element,MODx.tree.Tree,{
             /* do not allow anything to be dropped on an element */
             if(!(targetNode.parentNode &&
                 ((dropNode.attributes.cls == 'folder'
-                    && targetNode.attributes.cls == 'folder'
-                    && dropNode.parentNode.id == targetNode.parentNode.id
+                && targetNode.attributes.cls == 'folder'
+                && dropNode.parentNode.id == targetNode.parentNode.id
                 ) || targetNode.attributes.cls == 'file'))) {
                 r = true;
             }
@@ -537,90 +541,3 @@ Ext.extend(MODx.tree.Element,MODx.tree.Tree,{
     }
 });
 Ext.reg('modx-tree-element',MODx.tree.Element);
-
-
-/**
- * Generates the Duplicate Element window
- *
- * @class MODx.window.DuplicateElement
- * @extends MODx.Window
- * @param {Object} config An object of options.
- * @xtype modx-window-element-duplicate
- */
-MODx.window.DuplicateElement = function(config) {
-    config = config || {};
-    this.ident = config.ident || 'dupeel-'+Ext.id();
-    var flds = [{
-        xtype: 'hidden'
-        ,name: 'id'
-        ,id: 'modx-'+this.ident+'-id'
-    },{
-        xtype: 'textfield'
-        ,fieldLabel: _('element_name_new')
-        ,name: config.record.type == 'template' ? 'templatename' : 'name'
-        ,id: 'modx-'+this.ident+'-name'
-        ,anchor: '100%'
-    }];
-    if (config.record.type == 'tv') {
-        flds.push({
-            xtype: 'xcheckbox'
-            ,hideLabel: true
-            ,boxLabel: _('element_duplicate_values') // the text "Duplicate Resource Values?" does not really fit here
-            // ,labelSeparator: ''
-            ,name: 'duplicateValues'
-            ,id: 'modx-'+this.ident+'-duplicate-values'
-            ,anchor: '100%'
-            ,inputValue: 1
-            ,checked: false
-        });
-    }
-    Ext.applyIf(config,{
-        title: _('element_duplicate')
-        ,url: MODx.config.connector_url
-        ,action: 'element/'+config.record.type+'/duplicate'
-        ,fields: flds
-        ,labelWidth: 150
-    });
-    MODx.window.DuplicateElement.superclass.constructor.call(this,config);
-};
-Ext.extend(MODx.window.DuplicateElement,MODx.Window);
-Ext.reg('modx-window-element-duplicate',MODx.window.DuplicateElement);
-
-
-
-/**
- * Generates the Rename Category window.
- *
- * @class MODx.window.RenameCategory
- * @extends MODx.Window
- * @param {Object} config An object of options.
- * @xtype modx-window-category-rename
- */
-MODx.window.RenameCategory = function(config) {
-    config = config || {};
-    this.ident = config.ident || 'rencat-'+Ext.id();
-    Ext.applyIf(config,{
-        title: _('category_rename')
-        // ,height: 150
-        // ,width: 350
-        ,url: MODx.config.connector_url
-        ,action: 'element/category/update'
-        ,fields: [{
-            xtype: 'hidden'
-            ,name: 'id'
-            ,id: 'modx-'+this.ident+'-id'
-            ,value: config.record.id
-        },{
-            xtype: 'textfield'
-            ,fieldLabel: _('name')
-            ,name: 'category'
-            ,id: 'modx-'+this.ident+'-category'
-            ,width: 150
-            ,value: config.record.category
-            ,anchor: '100%'
-        }]
-    });
-    MODx.window.RenameCategory.superclass.constructor.call(this,config);
-};
-Ext.extend(MODx.window.RenameCategory,MODx.Window);
-Ext.reg('modx-window-category-rename',MODx.window.RenameCategory);

@@ -403,6 +403,7 @@ $children[2]->fromArray(array (
   'description' => 'logout_desc',
   'parent' => 'user',
   'permissions' => 'logout',
+  'action' => 'security/logout',
   'handler' => 'MODx.logout(); return false;',
 ), '', true, true);
 
@@ -462,7 +463,7 @@ $children[3]->fromArray(array (
   'text' => 'contexts',
   'description' => 'contexts_desc',
   'parent' => 'admin',
-  'permissions' => 'view_contexts',
+  'permissions' => 'view_context',
   'action' => 'context',
 ), '', true, true);
 

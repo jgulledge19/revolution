@@ -650,7 +650,7 @@ abstract class modObjectCreateProcessor extends modObjectProcessor {
         }
 
         /* save element */
-        if ($this->object->save() == false) {
+        if ($this->saveObject() == false) {
             $this->modx->error->checkValidation($this->object);
             return $this->failure($this->modx->lexicon($this->objectType.'_err_save'));
         }
@@ -660,6 +660,15 @@ abstract class modObjectCreateProcessor extends modObjectProcessor {
         $this->fireAfterSaveEvent();
         $this->logManagerAction();
         return $this->cleanup();
+    }
+
+    /**
+     * Abstract the saving of the object out to allow for transient and non-persistent object updating in derivative
+     * classes
+     * @return boolean
+     */
+    public function saveObject() {
+        return $this->object->save();
     }
 
     /**
@@ -702,7 +711,7 @@ abstract class modObjectCreateProcessor extends modObjectProcessor {
                 'data' => $this->object->toArray(),
                 $this->primaryKeyField => 0,
                 $this->objectType => &$this->object,
-                'object' => &$this->object, // for backwards compatibility, do not use this key
+                'object' => &$this->object,
             ));
             if (is_array($OnBeforeFormSave)) {
                 $preventSave = false;
@@ -728,7 +737,7 @@ abstract class modObjectCreateProcessor extends modObjectProcessor {
                 'mode' => modSystemEvent::MODE_NEW,
                 $this->primaryKeyField => $this->object->get($this->primaryKeyField),
                 $this->objectType => &$this->object,
-                'object' => &$this->object, // for backwards compatibility, do not use this key
+                'object' => &$this->object,
             ));
         }
     }
@@ -869,6 +878,7 @@ abstract class modObjectUpdateProcessor extends modObjectProcessor {
                 'data' => $this->object->toArray(),
                 $this->primaryKeyField => $this->object->get($this->primaryKeyField),
                 $this->objectType => &$this->object,
+                'object' => &$this->object,
             ));
             if (is_array($OnBeforeFormSave)) {
                 $preventSave = false;
@@ -894,6 +904,7 @@ abstract class modObjectUpdateProcessor extends modObjectProcessor {
                 'mode' => modSystemEvent::MODE_UPD,
                 $this->primaryKeyField => $this->object->get($this->primaryKeyField),
                 $this->objectType => &$this->object,
+                'object' => &$this->object,
             ));
         }
     }
@@ -969,8 +980,8 @@ class modObjectDuplicateProcessor extends modObjectProcessor {
             return $this->failure($canSave);
         }
 
-        /* save new chunk */
-        if ($this->newObject->save() === false) {
+        /* save new object */
+        if ($this->saveObject() === false) {
             $this->modx->error->checkValidation($this->newObject);
             return $this->failure($this->modx->lexicon($this->objectType.'_err_duplicate'));
         }
@@ -978,6 +989,15 @@ class modObjectDuplicateProcessor extends modObjectProcessor {
         $this->afterSave();
         $this->logManagerAction();
         return $this->cleanup();
+    }
+
+    /**
+     * Abstract the saving of the object out to allow for transient and non-persistent object updating in derivative
+     * classes
+     * @return boolean
+     */
+    public function saveObject() {
+        return $this->newObject->save();
     }
 
     /**
@@ -1082,7 +1102,7 @@ abstract class modObjectRemoveProcessor extends modObjectProcessor {
             return $this->failure($preventRemoval);
         }
 
-        if ($this->object->remove() == false) {
+        if ($this->removeObject() == false) {
             return $this->failure($this->modx->lexicon($this->objectType.'_err_remove'));
         }
         $this->afterRemove();
@@ -1090,6 +1110,15 @@ abstract class modObjectRemoveProcessor extends modObjectProcessor {
         $this->logManagerAction();
         $this->cleanup();
         return $this->success('',array($this->primaryKeyField => $this->object->get($this->primaryKeyField)));
+    }
+
+    /**
+     * Abstract the removing of the object out to allow for transient and non-persistent object updating in derivative
+     * classes
+     * @return boolean
+     */
+    public function removeObject() {
+        return $this->object->remove();
     }
 
     /**
@@ -1127,6 +1156,7 @@ abstract class modObjectRemoveProcessor extends modObjectProcessor {
             $response = $this->modx->invokeEvent($this->beforeRemoveEvent,array(
                 $this->primaryKeyField => $this->object->get($this->primaryKeyField),
                 $this->objectType => &$this->object,
+                'object' => &$this->object,
             ));
             $preventRemove = $this->processEventResponse($response);
         }
@@ -1142,6 +1172,7 @@ abstract class modObjectRemoveProcessor extends modObjectProcessor {
             $this->modx->invokeEvent($this->afterRemoveEvent,array(
                 $this->primaryKeyField => $this->object->get($this->primaryKeyField),
                 $this->objectType => &$this->object,
+                'object' => &$this->object,
             ));
         }
     }
@@ -1228,7 +1259,7 @@ abstract class modObjectSoftRemoveProcessor extends modObjectProcessor {
             $this->object->set($this->deletedByField, $this->modx->user->id);
         }
 
-        if ($this->object->save() == false) {
+        if ($this->saveObject() == false) {
             return $this->failure($this->modx->lexicon($this->objectType . '_err_soft_remove'));
         }
 
@@ -1238,6 +1269,15 @@ abstract class modObjectSoftRemoveProcessor extends modObjectProcessor {
         $this->cleanup();
 
         return $this->success('', array($this->primaryKeyField => $this->object->get($this->primaryKeyField)));
+    }
+
+    /**
+     * Abstract the saving of the object out to allow for transient and non-persistent object updating in derivative
+     * classes
+     * @return boolean
+     */
+    public function saveObject() {
+        return $this->object->save();
     }
 
     /**
@@ -1281,6 +1321,7 @@ abstract class modObjectSoftRemoveProcessor extends modObjectProcessor {
             $response = $this->modx->invokeEvent($this->beforeRemoveEvent, array(
                 $this->primaryKeyField => $this->object->get($this->primaryKeyField),
                 $this->objectType => &$this->object,
+                'object' => &$this->object,
             ));
             $preventRemove = $this->processEventResponse($response);
         }
@@ -1297,6 +1338,7 @@ abstract class modObjectSoftRemoveProcessor extends modObjectProcessor {
             $this->modx->invokeEvent($this->afterRemoveEvent, array(
                 $this->primaryKeyField => $this->object->get($this->primaryKeyField),
                 $this->objectType => &$this->object,
+                'object' => &$this->object,
             ));
         }
     }
@@ -1366,16 +1408,15 @@ abstract class modObjectExportProcessor extends modObjectGetProcessor {
      */
     public function download() {
         $file = $this->object->get($this->nameField).'.xml';
-        $f = $this->modx->getOption('core_path').'export/'.$this->objectType.'/'.$file;
-
+        $this->modx->getService('fileHandler', 'modFileHandler');
+        $fileobj = $this->modx->fileHandler->make($this->modx->getOption('core_path', null, MODX_CORE_PATH) . 'export/' . $this->objectType . '/' . $file);
         $name = strtolower(str_replace(array(' ','/'),'-',$this->object->get($this->nameField)));
 
-        if (!is_file($f)) return $this->failure($f);
+        if (!$fileobj->exists()) return $this->failure($f);
 
-        $o = file_get_contents($f);
+        $o = $fileobj->getContents();
 
-        header('Content-Type: application/force-download');
-        header('Content-Disposition: attachment; filename="'.$name.'.'.$this->objectType.'.xml"');
+        $fileobj->download(array('filename' => $name . '.' . $this->objectType . '.xml'));
 
         return $o;
     }
@@ -1400,7 +1441,7 @@ abstract class modObjectImportProcessor extends modObjectProcessor {
     public $setName = true;
     /** @var string $fileProperty The property that contains the file data */
     public $fileProperty = 'file';
-    /** @var string $xml The parsed XML from the file */
+    /** @var SimpleXMLElement $xml The parsed XML from the file */
     public $xml = '';
 
     public function initialize() {
@@ -1441,7 +1482,7 @@ abstract class modObjectImportProcessor extends modObjectProcessor {
         }
 
         if (!$this->object->save()) {
-            return $this->failure($this->modx->lexicon('policy_template_err_save'));
+            return $this->failure($this->modx->lexicon($this->objectType.'_err_save'));
         }
 
         $this->afterSave();
